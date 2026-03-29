@@ -1,0 +1,9 @@
+@echo off
+echo Starting Plaid MCP Dashboard...
+echo.
+echo Starting MCP Server in new window...
+start "MCP Server" cmd /k "uv run mcp_server.py"
+echo Starting Dashboard in new window...
+start "Dashboard" cmd /k "uv run dashboard.py"
+echo.
+echo Both servers starting. Open http://localhost:8080 in your browser.

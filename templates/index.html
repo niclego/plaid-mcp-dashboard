@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plaid MCP Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0f0f1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: #1a1a2e;
+            border-bottom: 1px solid #2a2a4a;
+        }
+
+        header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        #connect-btn {
+            padding: 8px 16px;
+            background: #4a6cf7;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        #connect-btn:hover { background: #3b5de7; }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            padding: 20px 24px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .panel {
+            background: #1a1a2e;
+            border: 1px solid #2a2a4a;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            max-height: calc(50vh - 60px);
+        }
+
+        .panel-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #2a2a4a;
+            font-size: 14px;
+            font-weight: 600;
+            color: #8888aa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .panel-body {
+            padding: 12px 16px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* Accounts */
+        .account-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #1f1f35;
+        }
+
+        .account-row:last-child { border-bottom: none; }
+
+        .account-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .account-name {
+            font-size: 14px;
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .account-meta {
+            font-size: 12px;
+            color: #6a6a8a;
+        }
+
+        .account-balance {
+            font-size: 16px;
+            font-weight: 600;
+            color: #4ade80;
+        }
+
+        /* Transactions */
+        .txn-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #1f1f35;
+            font-size: 13px;
+        }
+
+        .txn-row:last-child { border-bottom: none; }
+
+        .txn-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .txn-merchant { color: #ffffff; }
+        .txn-date { font-size: 11px; color: #6a6a8a; }
+
+        .txn-amount {
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .txn-amount.negative { color: #f87171; }
+        .txn-amount.positive { color: #4ade80; }
+
+        /* Recurring */
+        .recurring-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #1f1f35;
+            font-size: 13px;
+        }
+
+        .recurring-row:last-child { border-bottom: none; }
+
+        .recurring-info { display: flex; flex-direction: column; gap: 2px; }
+        .recurring-merchant { color: #ffffff; }
+        .recurring-meta { font-size: 11px; color: #6a6a8a; }
+        .recurring-amount { font-weight: 600; color: #f87171; white-space: nowrap; }
+        .recurring-inactive { opacity: 0.5; }
+
+        /* Investments */
+        .holding-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #1f1f35;
+            font-size: 13px;
+        }
+
+        .holding-row:last-child { border-bottom: none; }
+
+        .holding-info { display: flex; flex-direction: column; gap: 2px; }
+        .holding-name { color: #ffffff; }
+        .holding-meta { font-size: 11px; color: #6a6a8a; }
+        .holding-value { font-weight: 600; color: #4ade80; white-space: nowrap; }
+
+        /* Liabilities */
+        .liability-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #1f1f35;
+            font-size: 13px;
+        }
+
+        .liability-row:last-child { border-bottom: none; }
+
+        .liability-info { display: flex; flex-direction: column; gap: 2px; }
+        .liability-type { color: #ffffff; }
+        .liability-meta { font-size: 11px; color: #6a6a8a; }
+        .liability-amount { font-weight: 600; color: #f87171; white-space: nowrap; }
+        .liability-overdue { color: #f87171; font-size: 11px; font-weight: 600; }
+
+        /* Feed */
+        .feed-entry {
+            font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+            font-size: 12px;
+            padding: 6px 0;
+            border-bottom: 1px solid #1f1f35;
+            color: #a0a0c0;
+            line-height: 1.5;
+        }
+
+        .feed-entry:last-child { border-bottom: none; }
+
+        .feed-time { color: #6a6a8a; }
+        .feed-tool { color: #4a6cf7; font-weight: 600; }
+        .feed-result { color: #4ade80; }
+
+        /* Empty states */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6a6a8a;
+        }
+
+        .empty-state p {
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .empty-state button {
+            padding: 8px 16px;
+            background: #4a6cf7;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6a6a8a;
+            font-size: 13px;
+        }
+
+        /* Settings Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.open { display: flex; }
+
+        .modal {
+            background: #1a1a2e;
+            border: 1px solid #2a2a4a;
+            border-radius: 10px;
+            padding: 28px 32px;
+            width: 440px;
+            max-width: 90vw;
+        }
+
+        .modal h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+
+        .modal label {
+            display: block;
+            font-size: 12px;
+            color: #8888aa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            margin-top: 16px;
+        }
+
+        .modal label:first-of-type { margin-top: 0; }
+
+        .modal input, .modal select {
+            width: 100%;
+            padding: 8px 12px;
+            background: #0f0f1a;
+            border: 1px solid #2a2a4a;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 14px;
+            font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+        }
+
+        .modal input:focus, .modal select:focus {
+            outline: none;
+            border-color: #4a6cf7;
+        }
+
+        .modal select { cursor: pointer; }
+        .modal select option { background: #0f0f1a; }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .modal-actions button {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .btn-save {
+            background: #4a6cf7;
+            color: #fff;
+        }
+
+        .btn-save:hover { background: #3b5de7; }
+
+        .btn-cancel {
+            background: transparent;
+            color: #8888aa;
+            border: 1px solid #2a2a4a !important;
+        }
+
+        .btn-cancel:hover { border-color: #4a4a6a !important; color: #e0e0e0; }
+
+        .settings-status {
+            font-size: 12px;
+            margin-top: 16px;
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+
+        .settings-status.ok { background: #0d2818; color: #4ade80; }
+        .settings-status.error { background: #2d0f0f; color: #f87171; }
+
+        /* Header buttons */
+        .header-buttons { display: flex; gap: 8px; }
+
+        #refresh-btn {
+            padding: 8px 16px;
+            background: transparent;
+            color: #8888aa;
+            border: 1px solid #2a2a4a;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        #refresh-btn:hover { border-color: #4a4a6a; color: #e0e0e0; }
+
+        #settings-btn {
+            padding: 8px 16px;
+            background: transparent;
+            color: #8888aa;
+            border: 1px solid #2a2a4a;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        #settings-btn:hover { border-color: #4a4a6a; color: #e0e0e0; }
+
+        /* Setup prompt */
+        .setup-prompt {
+            text-align: center;
+            padding: 60px 20px;
+            grid-column: 1 / -1;
+        }
+
+        .setup-prompt h2 {
+            font-size: 20px;
+            color: #ffffff;
+            margin-bottom: 12px;
+        }
+
+        .setup-prompt p {
+            color: #6a6a8a;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .setup-prompt button {
+            padding: 10px 24px;
+            background: #4a6cf7;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .setup-prompt button:hover { background: #3b5de7; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Plaid MCP Dashboard</h1>
+        <div class="header-buttons">
+            <button id="refresh-btn" onclick="refreshAll()">Refresh</button>
+            <button id="settings-btn" onclick="openSettings()">Settings</button>
+            <button id="connect-btn" onclick="connectBank()">Connect a Bank</button>
+        </div>
+    </header>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal">
+            <h2>Plaid Configuration</h2>
+            <label for="settings-env">Environment</label>
+            <select id="settings-env">
+                <option value="sandbox">Sandbox (fake test data)</option>
+                <option value="production">Production (real banks)</option>
+            </select>
+            <label for="settings-client-id">Client ID</label>
+            <input type="text" id="settings-client-id" placeholder="e.g. 60a3b1..." autocomplete="off">
+            <label for="settings-secret">Secret</label>
+            <input type="password" id="settings-secret" placeholder="Enter your secret" autocomplete="off">
+            <div id="settings-status"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
+                <button class="btn-save" onclick="saveSettings()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard" id="dashboard-main">
+        <div class="panel">
+            <div class="panel-header">Accounts & Balances</div>
+            <div class="panel-body" id="accounts-panel">
+                <div class="loading">Loading accounts...</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">Recent Transactions</div>
+            <div class="panel-body" id="transactions-panel">
+                <div class="loading">Loading transactions...</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;">
+                MCP Activity Feed
+                <span style="font-size:11px;color:#6a6a8a;cursor:pointer;text-transform:none;letter-spacing:0;" onclick="clearFeed()">Clear</span>
+            </div>
+            <div class="panel-body" id="feed-panel">
+                <div class="empty-state"><p>No MCP activity yet. Waiting for LM Studio tool calls...</p></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">Recurring Transactions</div>
+            <div class="panel-body" id="recurring-panel">
+                <div class="loading">Loading recurring...</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">Investments</div>
+            <div class="panel-body" id="investments-panel">
+                <div class="loading">Loading investments...</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">Liabilities</div>
+            <div class="panel-body" id="liabilities-panel">
+                <div class="loading">Loading liabilities...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+    <script>
+        /* ── Data Loading ─────────────────────────────── */
+
+        async function loadAccounts() {
+            const panel = document.getElementById("accounts-panel");
+            try {
+                const res = await fetch("/api/accounts");
+                const accounts = await res.json();
+
+                if (accounts.length === 0) {
+                    panel.innerHTML = `
+                        <div class="empty-state">
+                            <p>No bank accounts linked yet.</p>
+                            <button onclick="connectBank()">Connect a Bank</button>
+                        </div>`;
+                    return;
+                }
+
+                panel.innerHTML = accounts.map(a => {
+                    if (a.error) return `<div class="account-row"><span style="color:#f87171">${a.error}</span></div>`;
+                    const balance = a.current_balance != null ? `$${Number(a.current_balance).toLocaleString("en-US", {minimumFractionDigits: 2})}` : "—";
+                    return `
+                        <div class="account-row">
+                            <div class="account-info">
+                                <span class="account-name">${esc(a.account_name)}</span>
+                                <span class="account-meta">${esc(a.institution_name)} · ${esc(a.account_type)}</span>
+                            </div>
+                            <span class="account-balance">${balance}</span>
+                        </div>`;
+                }).join("");
+            } catch (e) {
+                panel.innerHTML = `<div class="empty-state"><p>Failed to load accounts.</p></div>`;
+            }
+        }
+
+        async function loadTransactions() {
+            const panel = document.getElementById("transactions-panel");
+            try {
+                const res = await fetch("/api/transactions");
+                const txns = await res.json();
+
+                if (txns.length === 0) {
+                    panel.innerHTML = `<div class="empty-state"><p>No recent transactions.</p></div>`;
+                    return;
+                }
+
+                panel.innerHTML = txns.map(t => {
+                    if (t.error) return `<div class="txn-row"><span style="color:#f87171">${t.error}</span></div>`;
+                    const amount = Number(t.amount);
+                    const cls = amount > 0 ? "negative" : "positive";
+                    const display = `$${Math.abs(amount).toLocaleString("en-US", {minimumFractionDigits: 2})}`;
+                    return `
+                        <div class="txn-row">
+                            <div class="txn-info">
+                                <span class="txn-merchant">${esc(t.merchant_name || "Unknown")}</span>
+                                <span class="txn-date">${esc(t.date)}</span>
+                            </div>
+                            <span class="txn-amount ${cls}">${amount > 0 ? "-" : "+"}${display}</span>
+                        </div>`;
+                }).join("");
+            } catch (e) {
+                panel.innerHTML = `<div class="empty-state"><p>Failed to load transactions.</p></div>`;
+            }
+        }
+
+        async function loadFeed() {
+            const panel = document.getElementById("feed-panel");
+            try {
+                const res = await fetch("/api/feed");
+                const entries = await res.json();
+
+                if (entries.length === 0) {
+                    panel.innerHTML = `<div class="empty-state"><p>No MCP activity yet. Waiting for LM Studio tool calls...</p></div>`;
+                    return;
+                }
+
+                const reversed = [...entries].reverse();
+                panel.innerHTML = reversed.map(e => {
+                    const params = Object.entries(e.params || {}).map(([k, v]) => `${k}=${v}`).join(", ");
+                    return `
+                        <div class="feed-entry">
+                            <span class="feed-time">[${esc(e.timestamp)}]</span>
+                            <span class="feed-tool">${esc(e.tool_name)}</span>(${esc(params)})
+                            <span class="feed-result">→ ${e.result_count} results</span>
+                        </div>`;
+                }).join("");
+            } catch (e) {
+                /* silently retry on next poll */
+            }
+        }
+
+        async function loadRecurring() {
+            const panel = document.getElementById("recurring-panel");
+            try {
+                const res = await fetch("/api/recurring");
+                const items = await res.json();
+
+                if (items.length === 0) {
+                    panel.innerHTML = `<div class="empty-state"><p>No recurring transactions found.</p></div>`;
+                    return;
+                }
+
+                panel.innerHTML = items.map(r => {
+                    if (r.error) return `<div class="recurring-row"><span style="color:#f87171">${esc(r.error)}</span></div>`;
+                    const amount = r.amount != null ? `$${Math.abs(Number(r.amount)).toLocaleString("en-US", {minimumFractionDigits: 2})}` : "—";
+                    const cls = r.is_active === false ? "recurring-row recurring-inactive" : "recurring-row";
+                    return `
+                        <div class="${cls}">
+                            <div class="recurring-info">
+                                <span class="recurring-merchant">${esc(r.merchant_name || "Unknown")}</span>
+                                <span class="recurring-meta">${esc(r.frequency || "")}${r.last_date ? " · Last: " + esc(r.last_date) : ""}${r.is_active === false ? " · Inactive" : ""}</span>
+                            </div>
+                            <span class="recurring-amount">${amount}</span>
+                        </div>`;
+                }).join("");
+            } catch (e) {
+                panel.innerHTML = `<div class="empty-state"><p>Failed to load recurring transactions.</p></div>`;
+            }
+        }
+
+        async function loadInvestments() {
+            const panel = document.getElementById("investments-panel");
+            try {
+                const res = await fetch("/api/investments");
+                const items = await res.json();
+
+                if (items.length === 0) {
+                    panel.innerHTML = `<div class="empty-state"><p>No investment holdings found.</p></div>`;
+                    return;
+                }
+
+                panel.innerHTML = items.map(h => {
+                    if (h.error) return `<div class="holding-row"><span style="color:#f87171">${esc(h.error)}</span></div>`;
+                    const value = h.current_value != null ? `$${Number(h.current_value).toLocaleString("en-US", {minimumFractionDigits: 2})}` : "—";
+                    const ticker = h.ticker ? ` (${h.ticker})` : "";
+                    const qty = h.quantity != null ? `${Number(h.quantity).toLocaleString()} shares` : "";
+                    return `
+                        <div class="holding-row">
+                            <div class="holding-info">
+                                <span class="holding-name">${esc(h.security_name || "Unknown")}${esc(ticker)}</span>
+                                <span class="holding-meta">${esc(qty)}</span>
+                            </div>
+                            <span class="holding-value">${value}</span>
+                        </div>`;
+                }).join("");
+            } catch (e) {
+                panel.innerHTML = `<div class="empty-state"><p>Failed to load investments.</p></div>`;
+            }
+        }
+
+        async function loadLiabilities() {
+            const panel = document.getElementById("liabilities-panel");
+            try {
+                const res = await fetch("/api/liabilities");
+                const items = await res.json();
+
+                if (items.length === 0) {
+                    panel.innerHTML = `<div class="empty-state"><p>No liabilities found.</p></div>`;
+                    return;
+                }
+
+                panel.innerHTML = items.map(l => {
+                    if (l.error) return `<div class="liability-row"><span style="color:#f87171">${esc(l.error)}</span></div>`;
+                    const payment = l.last_payment_amount != null ? `$${Number(l.last_payment_amount).toLocaleString("en-US", {minimumFractionDigits: 2})}` : "—";
+                    const overdue = l.is_overdue ? `<span class="liability-overdue">OVERDUE</span>` : "";
+                    const meta = [
+                        l.interest_rate != null ? `${l.interest_rate}% APR` : null,
+                        l.next_due_date ? `Due: ${l.next_due_date}` : null,
+                        l.loan_name || null,
+                        l.loan_term || null,
+                    ].filter(Boolean).join(" · ");
+                    return `
+                        <div class="liability-row">
+                            <div class="liability-info">
+                                <span class="liability-type">${esc(l.type)} ${overdue}</span>
+                                <span class="liability-meta">${esc(meta)}</span>
+                            </div>
+                            <span class="liability-amount">${payment}</span>
+                        </div>`;
+                }).join("");
+            } catch (e) {
+                panel.innerHTML = `<div class="empty-state"><p>Failed to load liabilities.</p></div>`;
+            }
+        }
+
+        /* ── Plaid Link ───────────────────────────────── */
+
+        async function connectBank() {
+            try {
+                const res = await fetch("/plaid/create-link-token", { method: "POST" });
+                const data = await res.json();
+
+                const handler = Plaid.create({
+                    token: data.link_token,
+                    onSuccess: async (publicToken, metadata) => {
+                        await fetch("/plaid/exchange-token", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                public_token: publicToken,
+                                institution_name: metadata.institution.name,
+                            }),
+                        });
+                        refreshAll();
+                    },
+                    onExit: (err) => {
+                        if (err) console.error("Plaid Link exit error:", err);
+                    },
+                });
+                handler.open();
+            } catch (e) {
+                console.error("Failed to start Plaid Link:", e);
+                alert("Failed to start Plaid Link. Check your Plaid credentials in .env.");
+            }
+        }
+
+        /* ── Settings ─────────────────────────────────── */
+
+        async function checkSettings() {
+            try {
+                const res = await fetch("/api/settings");
+                const settings = await res.json();
+
+                if (!settings.has_client_id || !settings.has_secret) {
+                    showSetupPrompt();
+                    return false;
+                }
+
+                document.getElementById("settings-env").value = settings.plaid_env || "sandbox";
+                if (settings.client_id_preview) {
+                    document.getElementById("settings-client-id").placeholder = `Current: ${settings.client_id_preview}`;
+                }
+                if (settings.has_secret) {
+                    document.getElementById("settings-secret").placeholder = "Leave blank to keep current";
+                }
+                return true;
+            } catch (e) {
+                showSetupPrompt();
+                return false;
+            }
+        }
+
+        function showSetupPrompt() {
+            const dashboard = document.getElementById("dashboard-main");
+            dashboard.innerHTML = `
+                <div class="setup-prompt">
+                    <h2>Welcome to Plaid MCP Dashboard</h2>
+                    <p>To get started, configure your Plaid API credentials.</p>
+                    <button onclick="openSettings()">Open Settings</button>
+                </div>`;
+        }
+
+        function openSettings() {
+            document.getElementById("settings-modal").classList.add("open");
+            document.getElementById("settings-status").innerHTML = "";
+        }
+
+        function closeSettings() {
+            document.getElementById("settings-modal").classList.remove("open");
+        }
+
+        async function saveSettings() {
+            const statusEl = document.getElementById("settings-status");
+            const clientId = document.getElementById("settings-client-id").value.trim();
+            const secret = document.getElementById("settings-secret").value.trim();
+            const plaidEnv = document.getElementById("settings-env").value;
+
+            statusEl.className = "settings-status";
+            statusEl.textContent = "Saving...";
+
+            try {
+                const res = await fetch("/api/settings", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        client_id: clientId,
+                        secret: secret,
+                        plaid_env: plaidEnv,
+                    }),
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    statusEl.className = "settings-status ok";
+                    statusEl.textContent = "Saved! Reloading dashboard...";
+                    setTimeout(() => {
+                        closeSettings();
+                        location.reload();
+                    }, 1000);
+                } else {
+                    statusEl.className = "settings-status error";
+                    statusEl.textContent = data.error || "Failed to save settings.";
+                }
+            } catch (e) {
+                statusEl.className = "settings-status error";
+                statusEl.textContent = "Failed to connect to server.";
+            }
+        }
+
+        /* ── Refresh / Clear ──────────────────────────── */
+
+        async function clearFeed() {
+            await fetch("/api/feed/clear", { method: "POST" });
+            loadFeed();
+        }
+
+        function refreshAll() {
+            loadAccounts();
+            loadTransactions();
+            loadFeed();
+            loadRecurring();
+            loadInvestments();
+            loadLiabilities();
+        }
+
+        /* ── Utilities ────────────────────────────────── */
+
+        function esc(str) {
+            const d = document.createElement("div");
+            d.textContent = str ?? "";
+            return d.innerHTML;
+        }
+
+        /* ── Init ─────────────────────────────────────── */
+
+        (async function init() {
+            const configured = await checkSettings();
+            if (configured) {
+                loadAccounts();
+                loadTransactions();
+                loadFeed();
+                loadRecurring();
+                loadInvestments();
+                loadLiabilities();
+            }
+        })();
+    </script>
+</body>
+</html>

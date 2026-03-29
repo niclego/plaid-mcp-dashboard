@@ -1,0 +1,9 @@
+.env
+feed.json
+__pycache__/
+*.pyc
+.venv/
+.python-version
+*.egg-info/
+dist/
+_audit/

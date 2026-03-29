@@ -1,0 +1,12 @@
+[project]
+name = "plaid-mcp-dashboard"
+version = "0.1.0"
+description = "A local personal finance dashboard powered by Plaid and MCP for natural language queries via LM Studio."
+requires-python = ">=3.12"
+license = "MIT"
+dependencies = [
+    "flask>=3.0",
+    "fastmcp>=2.0",
+    "plaid-python>=29.0",
+    "python-dotenv>=1.0",
+]
