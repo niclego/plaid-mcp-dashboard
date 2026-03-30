@@ -2,6 +2,8 @@
 
 A local, private personal finance tool that lets you chat with your bank data via LM Studio while viewing accounts, transactions, and AI activity in a browser dashboard.
 
+<img width="2559" height="1389" alt="Screenshot 2026-03-29 201926" src="https://github.com/user-attachments/assets/4f34f828-69b5-4593-b8b0-0b88af600c25" />
+
 ## Disclaimer
 
 This is 100% vibe coded.
